@@ -16,12 +16,12 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.24"
 
       - name: Cache Go modules
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -41,7 +41,7 @@ jobs:
         run: go tool cover -html=coverage.out -o coverage.html
 
       - name: Upload coverage reports
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage.html
@@ -65,7 +65,7 @@ jobs:
           title: "✅ Test Success"
           text: "This is a test message from the GitHub Actions test workflow"
           slack_token: ${{ secrets.SLACK_TOKEN }}
-          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+          slack_channel: ${{ secrets.TEST_SLACK_CHANNEL || 'general' }}
         continue-on-error: true # Don't fail the workflow if Slack token is not available
 
   test-action-failure-simulation:
@@ -95,7 +95,7 @@ jobs:
 
             This is a test of failure notification formatting.
           slack_token: ${{ secrets.SLACK_TOKEN }}
-          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+          slack_channel: ${{ secrets.TEST_SLACK_CHANNEL || 'general' }}
         continue-on-error: true
 
   test-action-formatting:
@@ -129,7 +129,7 @@ jobs:
             - Event: ${{ github.event_name }}
             - Workflow: ${{ github.workflow }}
           slack_token: ${{ secrets.SLACK_TOKEN }}
-          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+          slack_channel: ${{ secrets.TEST_SLACK_CHANNEL || 'general' }}
         continue-on-error: true
 
   test-action-edge-cases:
@@ -144,7 +144,7 @@ jobs:
           title: ""
           text: "Testing empty title"
           slack_token: ${{ secrets.SLACK_TOKEN }}
-          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+          slack_channel: ${{ secrets.TEST_SLACK_CHANNEL || 'general' }}
         continue-on-error: true
         id: empty-title-test
 
@@ -154,7 +154,7 @@ jobs:
           title: "Testing empty text"
           text: ""
           slack_token: ${{ secrets.SLACK_TOKEN }}
-          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+          slack_channel: ${{ secrets.TEST_SLACK_CHANNEL || 'general' }}
         continue-on-error: true
         id: empty-text-test
 
@@ -171,7 +171,7 @@ jobs:
 
             Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.
           slack_token: ${{ secrets.SLACK_TOKEN }}
-          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+          slack_channel: ${{ secrets.TEST_SLACK_CHANNEL || 'general' }}
         continue-on-error: true
 
       - name: Test Unicode and emojis
@@ -195,7 +195,7 @@ jobs:
             - Chinese: 你好
             - Russian: Привет
           slack_token: ${{ secrets.SLACK_TOKEN }}
-          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+          slack_channel: ${{ secrets.TEST_SLACK_CHANNEL || 'general' }}
         continue-on-error: true
 
   # Performance test
@@ -226,7 +226,7 @@ jobs:
 
             This tests the action's performance with multiple concurrent executions.
           slack_token: ${{ secrets.SLACK_TOKEN }}
-          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+          slack_channel: ${{ secrets.TEST_SLACK_CHANNEL || 'general' }}
         continue-on-error: true
 
   # Test summary
@@ -279,5 +279,5 @@ jobs:
 
             [View Workflow Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
           slack_token: ${{ secrets.SLACK_TOKEN }}
-          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+          slack_channel: ${{ secrets.TEST_SLACK_CHANNEL || 'general' }}
         continue-on-error: true
