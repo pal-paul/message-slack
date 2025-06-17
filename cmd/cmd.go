@@ -18,35 +18,39 @@ type Environment struct {
 	}
 }
 
-var envVar Environment
+var (
+	envVar      Environment
+	slackClient slack.ISlack
+)
 
-var slackClient slack.ISlack
-
-// Initializing environment variables
-func init() {
+// Initialize environment variables and Slack client
+func initializeApp() error {
 	_, err := env.Unmarshal(&envVar)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
-}
 
-func init() {
 	slackClient = slack.New(
 		slack.WithToken(envVar.Slack.Token),
 	)
+	return nil
 }
 
 func main() {
-	message := SlackMessageBuilder(envVar.Input.Title, envVar.Input.Text)
+	if err := initializeApp(); err != nil {
+		log.Fatal(err)
+	}
+
+	message := SlackMessageBuilder(envVar.Input.Title, envVar.Input.Text, envVar.Slack.Channel)
 	_, err := slackClient.AddFormattedMessage(envVar.Slack.Channel, message)
 	if err != nil {
 		log.Fatalf("error while sending message to slack: %v", err)
 	}
 }
 
-func SlackMessageBuilder(title string, text string) slack.Message {
+func SlackMessageBuilder(title string, text string, channel string) slack.Message {
 	message := slack.Message{
-		Channel: envVar.Slack.Channel,
+		Channel: channel,
 	}
 
 	message.Blocks = append(message.Blocks, slack.Block{

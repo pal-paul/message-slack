@@ -1,0 +1,283 @@
+name: Test Action
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  # Unit and integration tests
+  test-go:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.24"
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run unit tests
+        run: go test -v ./cmd/
+
+      - name: Run unit tests with coverage
+        run: go test -v -coverprofile=coverage.out ./cmd/
+
+      - name: Display coverage
+        run: go tool cover -html=coverage.out -o coverage.html
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage.html
+
+      - name: Run integration tests
+        run: go test -v -tags=integration ./cmd/
+
+      - name: Run benchmarks
+        run: go test -bench=. -benchmem ./cmd/
+
+  # Test the action with different scenarios
+  test-action-success:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test successful notification
+        uses: ./
+        with:
+          title: "✅ Test Success"
+          text: "This is a test message from the GitHub Actions test workflow"
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+        continue-on-error: true # Don't fail the workflow if Slack token is not available
+
+  test-action-failure-simulation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Simulate a failing step
+        run: |
+          echo "Simulating a failure..."
+          exit 1
+        continue-on-error: true
+        id: failing-step
+
+      - name: Test failure notification
+        if: always()
+        uses: ./
+        with:
+          title: "❌ Test Failure"
+          text: |
+            **Step Status:** ${{ steps.failing-step.outcome }}
+            **Repository:** ${{ github.repository }}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.sha }}
+            **Actor:** ${{ github.actor }}
+
+            This is a test of failure notification formatting.
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+        continue-on-error: true
+
+  test-action-formatting:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test rich formatting
+        uses: ./
+        with:
+          title: "🎨 Rich Formatting Test"
+          text: |
+            **Bold Text** and *italic text*
+
+            • List item 1
+            • List item 2
+            • List item 3
+
+            `Inline code` and code blocks:
+            ```
+            echo "Hello, World!"
+            ```
+
+            [Link to Repository](${{ github.server_url }}/${{ github.repository }})
+
+            ---
+
+            **Environment Variables:**
+            - Runner OS: ${{ runner.os }}
+            - Event: ${{ github.event_name }}
+            - Workflow: ${{ github.workflow }}
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+        continue-on-error: true
+
+  test-action-edge-cases:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Test empty title (should fail)
+        uses: ./
+        with:
+          title: ""
+          text: "Testing empty title"
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+        continue-on-error: true
+        id: empty-title-test
+
+      - name: Test empty text (should fail)
+        uses: ./
+        with:
+          title: "Testing empty text"
+          text: ""
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+        continue-on-error: true
+        id: empty-text-test
+
+      - name: Test very long message
+        uses: ./
+        with:
+          title: "📏 Long Message Test"
+          text: |
+            This is a very long message that tests how the action handles large amounts of text.
+
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.
+
+            Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo.
+
+            Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit.
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+        continue-on-error: true
+
+      - name: Test Unicode and emojis
+        uses: ./
+        with:
+          title: "🌍 Unicode Test 🚀"
+          text: |
+            Testing various Unicode characters and emojis:
+
+            **Emojis:** 🎉 🔥 ⚡ 🌟 💯 🎯 🚨 ✅ ❌ ⚠️
+
+            **Unicode Characters:**
+            - Accented: café, naïve, résumé
+            - Mathematical: α β γ δ ∑ ∫ ∞ ≈ ≠ ±
+            - Currency: $ € £ ¥ ₹ ₿
+            - Arrows: → ← ↑ ↓ ↔ ⇒ ⇐
+
+            **Other Languages:**
+            - Japanese: こんにちは
+            - Arabic: مرحبا
+            - Chinese: 你好
+            - Russian: Привет
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+        continue-on-error: true
+
+  # Performance test
+  test-action-performance:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        message_count: [1, 5, 10]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Performance test - Send ${{ matrix.message_count }} messages
+        run: |
+          for i in $(seq 1 ${{ matrix.message_count }}); do
+            echo "Sending message $i of ${{ matrix.message_count }}"
+          done
+
+      - name: Send performance test notification
+        uses: ./
+        with:
+          title: "⚡ Performance Test (${{ matrix.message_count }} messages)"
+          text: |
+            **Test Configuration:**
+            - Message Count: ${{ matrix.message_count }}
+            - Runner: ${{ runner.os }}
+            - Matrix Job: ${{ strategy.job-index }}
+
+            This tests the action's performance with multiple concurrent executions.
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+        continue-on-error: true
+
+  # Test summary
+  test-summary:
+    runs-on: ubuntu-latest
+    needs:
+      [
+        test-go,
+        test-action-success,
+        test-action-failure-simulation,
+        test-action-formatting,
+        test-action-edge-cases,
+        test-action-performance,
+      ]
+    if: always()
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate test summary
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Go Unit Tests | ${{ needs.test-go.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Action Success Test | ${{ needs.test-action-success.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Action Failure Test | ${{ needs.test-action-failure-simulation.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Action Formatting Test | ${{ needs.test-action-formatting.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Action Edge Cases Test | ${{ needs.test-action-edge-cases.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Action Performance Test | ${{ needs.test-action-performance.result }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Send test summary to Slack
+        uses: ./
+        with:
+          title: "📊 Test Suite Summary"
+          text: |
+            **Workflow:** ${{ github.workflow }}
+            **Event:** ${{ github.event_name }}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.sha }}
+
+            **Results:**
+            - Go Unit Tests: ${{ needs.test-go.result }}
+            - Action Success Test: ${{ needs.test-action-success.result }}
+            - Action Failure Test: ${{ needs.test-action-failure-simulation.result }}
+            - Action Formatting Test: ${{ needs.test-action-formatting.result }}
+            - Action Edge Cases Test: ${{ needs.test-action-edge-cases.result }}
+            - Action Performance Test: ${{ needs.test-action-performance.result }}
+
+            [View Workflow Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          slack_channel: ${{ vars.TEST_SLACK_CHANNEL || 'general' }}
+        continue-on-error: true

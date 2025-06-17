@@ -53,8 +53,30 @@ build: generate-mocks ## generate all mocks and build the go code
 
 deploy: install build
 
-test: ## run tests
-	go test -v ./...
+test: ## run unit tests
+	go test -v ./cmd/
+
+test-integration: ## run integration tests
+	go test -v -tags=integration ./cmd/
+
+test-all: ## run all tests (unit + integration)
+	go test -v ./cmd/
+	go test -v -tags=integration ./cmd/
+
+test-coverage: ## run tests with coverage
+	go test -v -coverprofile=coverage.out ./cmd/
+	go tool cover -html=coverage.out -o coverage.html
+	@echo "Coverage report generated: coverage.html"
+
+test-bench: ## run benchmark tests
+	go test -bench=. -benchmem ./cmd/
+
+test-race: ## run tests with race detection
+	go test -race -v ./cmd/
+
+test-clean: ## clean test artifacts
+	rm -f coverage.out coverage.html
+	rm -f cmd/cmd_test cmd/cmd_timeout_test
 
 tidy:
 	go get -u ./...
