@@ -1,0 +1,104 @@
+name: Message Slack Example
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Example 1: Basic message on successful build
+  notify-success:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build Application
+        run: |
+          echo "Building application..."
+          # Your build steps here
+          
+      - name: Notify Slack on Success
+        if: success()
+        uses: pal-paul/message-slack@v1.4.0
+        with:
+          title: "✅ Build Successful"
+          text: "The build for `${{ github.repository }}` completed successfully on branch `${{ github.ref_name }}`"
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          slack_channel: "builds"
+
+  # Example 2: Conditional notification on failure
+  notify-failure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Tests
+        run: |
+          echo "Running tests..."
+          # Your test commands here
+          
+      - name: Notify Slack on Failure
+        if: failure()
+        uses: pal-paul/message-slack@v1.4.0
+        with:
+          title: "❌ Test Failed"
+          text: |
+            **Repository:** ${{ github.repository }}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.sha }}
+            **Actor:** ${{ github.actor }}
+            
+            [View Workflow Run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          slack_channel: "alerts"
+
+  # Example 3: Always notify regardless of status
+  deployment-notification:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy to Production
+        id: deploy
+        run: |
+          echo "Deploying to production..."
+          echo "deployment_status=success" >> $GITHUB_OUTPUT
+          # Your deployment steps here
+          
+      - name: Notify Slack Always
+        if: always()
+        uses: pal-paul/message-slack@v1.4.0
+        with:
+          title: "🚀 Production Deployment"
+          text: |
+            **Status:** ${{ steps.deploy.outcome == 'success' && '✅ Success' || '❌ Failed' }}
+            **Environment:** Production
+            **Version:** ${{ github.sha }}
+            **Deployed by:** ${{ github.actor }}
+            **Time:** ${{ github.event.head_commit.timestamp }}
+            
+            *Deployment completed with status: ${{ steps.deploy.outcome }}*
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          slack_channel: "deployments"
+
+  # Example 4: Pull Request notifications
+  pr-notification:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Notify Slack of PR
+        uses: pal-paul/message-slack@v1.4.0
+        with:
+          title: "📝 New Pull Request"
+          text: |
+            **Title:** ${{ github.event.pull_request.title }}
+            **Author:** ${{ github.event.pull_request.user.login }}
+            **Base:** ${{ github.event.pull_request.base.ref }}
+            **Head:** ${{ github.event.pull_request.head.ref }}
+            
+            [View Pull Request](${{ github.event.pull_request.html_url }})
+          slack_token: ${{ secrets.SLACK_TOKEN }}
+          slack_channel: "pull-requests"
