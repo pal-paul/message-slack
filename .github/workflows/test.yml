@@ -18,7 +18,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          go-version-file: "go.mod"
 
       - name: Cache Go modules
         uses: actions/cache@v4
@@ -59,6 +59,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Build Linux binary
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o cmd/cmd cmd/cmd.go
+          chmod +x cmd/cmd
+
       - name: Test successful notification
         uses: ./
         with:
@@ -73,6 +83,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Build Linux binary
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o cmd/cmd cmd/cmd.go
+          chmod +x cmd/cmd
 
       - name: Simulate a failing step
         run: |
@@ -103,6 +123,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Build Linux binary
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o cmd/cmd cmd/cmd.go
+          chmod +x cmd/cmd
 
       - name: Test rich formatting
         uses: ./
@@ -137,6 +167,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Build Linux binary
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o cmd/cmd cmd/cmd.go
+          chmod +x cmd/cmd
 
       - name: Test empty title (should fail)
         uses: ./
@@ -208,6 +248,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Build Linux binary
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o cmd/cmd cmd/cmd.go
+          chmod +x cmd/cmd
+
       - name: Performance test - Send ${{ matrix.message_count }} messages
         run: |
           for i in $(seq 1 ${{ matrix.message_count }}); do
@@ -245,6 +295,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: "go.mod"
+
+      - name: Build Linux binary
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o cmd/cmd cmd/cmd.go
+          chmod +x cmd/cmd
 
       - name: Generate test summary
         run: |
