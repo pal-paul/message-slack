@@ -1,0 +1,32 @@
+name: "palpaul-message-slack"
+description: "Send Slack message from your GitHub Actions workflow"
+author: 'Palash Paul'
+branding:
+  icon: 'activity'
+  color: 'green'
+inputs:
+  title:
+    description:  "Title of the message"
+    required: true
+  text:
+    description:  "Text of the message"
+    required: true
+  slack_token:
+    description: "Slack token"
+    required: true
+  slack_channel:
+    description: "Slack channel"
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Run message-slack
+      shell: bash
+      run: |
+        chmod +x ${{ github.action_path }}/cmd/cmd
+        ${{ github.action_path }}/cmd/cmd
+      env:
+        INPUT_TITLE: ${{ inputs.title }}
+        INPUT_TEXT: ${{ inputs.text }}
+        INPUT_SLACK_TOKEN: ${{ inputs.slack_token }}
+        INPUT_SLACK_CHANNEL: ${{ inputs.slack_channel }}
